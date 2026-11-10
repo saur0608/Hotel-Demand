@@ -1,0 +1,20 @@
+# Environments & Secrets
+.env
+.venv/
+venv/
+ENV/
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Databases (SQLite app databases)
+*.db
+data/*.db
+data/app.db
+
+# OS Artifacts
+.DS_Store
+Thumbs.db

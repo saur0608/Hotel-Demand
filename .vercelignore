@@ -1,0 +1,12 @@
+# Deployment ignore for Vercel
+tests/
+notebooks/
+docs/
+data/raw/
+artifacts/eda_plots/
+.venv/
+.pytest_cache/
+.git/
+app/streamlit_app.py
+requirements-dev.txt
+requirements-app.txt

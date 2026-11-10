@@ -46,7 +46,7 @@ case "$STEP" in
     ;;
   serve-api)
     echo "==> [Stage 7] Starting FastAPI server on port 8000..."
-    $UVICORN app.api:app --host 0.0.0.0 --port 8000 --reload
+    $UVICORN main:app --host 0.0.0.0 --port 8000 --reload
     ;;
   serve-ui)
     echo "==> [Stage 7] Starting Streamlit dashboard on port 8501..."

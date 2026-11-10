@@ -112,6 +112,18 @@ bash run.sh all
 
 ---
 
+## 🚀 Deployment Architecture & Cloud Hosting
+
+To ensure scalability and reliable authentication persistence, the system separates the frontend dashboard from the API backend:
+
+> [!IMPORTANT]
+> **Separation of Concerns & SQLite Persistence**:
+> - **FastAPI Backend (Entry: `main.py` -> `uvicorn main:app`)**: Deployed on a platform with persistent disk storage (e.g., **Render** using [`render.yaml`](file:///Users/saurabhsingh/Downloads/hotal/render.yaml), or **Railway** / **Docker**). SQLite (`data/app.db`) stores user accounts, bcrypt password hashes, and manager approval states; serverless platforms (like Vercel or AWS Lambda) reset ephemeral filesystem state on each cold start, which would erase registered users.
+> - **Streamlit Dashboard (Entry: `app/streamlit_app.py`)**: Deployed independently on **Streamlit Community Cloud** (using [`requirements-app.txt`](file:///Users/saurabhsingh/Downloads/hotal/requirements-app.txt)). The dashboard securely connects to the deployed FastAPI backend via REST API.
+> - **Entrypoint Structure**: Root-level `main.py` cleanly exposes the FastAPI instance (`from app.api import app`), preventing `[FASTAPI_ENTRYPOINT_NOT_FOUND]` errors while keeping application logic organized in `app/api.py`. Tests are excluded from deployments via `.vercelignore`, `.dockerignore`, and `.slugignore`.
+
+---
+
 ## 📊 Benchmark Backtest Results (Untouched Test Partition: Oct–Dec 2025)
 
 ### Overall Model Performance

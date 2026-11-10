@@ -1,0 +1,20 @@
+# ==============================================================================
+# Render Blueprint Configuration (FastAPI Backend with Persistent Disk)
+# ==============================================================================
+services:
+  - type: web
+    name: hotel-demand-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    disk:
+      name: sqlite-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: SECRET_KEY
+        value: placeholder-change-in-render-dashboard
+      - key: DEMO_MANAGER_PW
+        value: placeholder-change-in-render-dashboard
+      - key: API_HOST
+        value: 0.0.0.0

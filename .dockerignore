@@ -1,0 +1,11 @@
+# Deployment ignore for Docker & Container builds
+tests/
+notebooks/
+docs/
+data/raw/
+artifacts/eda_plots/
+.venv/
+.pytest_cache/
+.git/
+requirements-dev.txt
+requirements-app.txt

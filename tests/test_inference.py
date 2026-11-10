@@ -15,7 +15,9 @@ import pandas as pd
 import pytest
 from starlette.testclient import TestClient
 
-from app.api import app, construct_feature_row, ForecastRequest
+from app.api import app as test_app, construct_feature_row, ForecastRequest
+
+test_app.__test__ = False
 from src.config import (
     CONFORMAL_ARTIFACT_PATH,
     MODEL_ARTIFACT_PATH,
@@ -107,7 +109,7 @@ def test_fastapi_endpoints():
     """Test FastAPI service endpoints using Starlette TestClient."""
     from src.config import DEMO_MANAGER_EMAIL, DEMO_MANAGER_PASSWORD
 
-    with TestClient(app) as client:
+    with TestClient(test_app) as client:
         # 1. Health check
         res_health = client.get("/health")
         assert res_health.status_code == 200

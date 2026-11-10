@@ -92,7 +92,7 @@ API_PORT: int = int(os.getenv("API_PORT", "8000"))
 STREAMLIT_PORT: int = int(os.getenv("STREAMLIT_PORT", "8501"))
 
 # JWT & Password Hashing
-JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "hotel-forecasting-super-secret-key-change-in-production-2026")
+JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", os.getenv("SECRET_KEY", "hotel-forecasting-super-secret-key-change-in-production-2026"))
 JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
@@ -102,7 +102,7 @@ APP_DB_PATH: Path = DATA_DIR / "app.db"
 # Demo user credentials for scripts/seed_users.py
 DEMO_MANAGER_NAME: str = os.getenv("DEMO_MANAGER_NAME", "Hotel General Manager")
 DEMO_MANAGER_EMAIL: str = os.getenv("DEMO_MANAGER_EMAIL", "manager@hotel.com")
-DEMO_MANAGER_PASSWORD: str = os.getenv("DEMO_MANAGER_PASSWORD", "ManagerPass@123")
+DEMO_MANAGER_PASSWORD: str = os.getenv("DEMO_MANAGER_PASSWORD", os.getenv("DEMO_MANAGER_PW", "ManagerPass@123"))
 
 DEMO_FRONT_DESK_NAME: str = os.getenv("DEMO_FRONT_DESK_NAME", "Front Desk Receptionist")
 DEMO_FRONT_DESK_EMAIL: str = os.getenv("DEMO_FRONT_DESK_EMAIL", "frontdesk@hotel.com")

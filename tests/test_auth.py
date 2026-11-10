@@ -19,7 +19,9 @@ import sqlite3
 import pytest
 from starlette.testclient import TestClient
 
-from app.api import app
+from app.api import app as test_app
+
+test_app.__test__ = False
 from scripts.seed_users import seed_demo_users
 from src.auth import _failed_login_attempts, init_user_db, update_user_status
 from src.config import (
@@ -86,7 +88,7 @@ def test_passwords_stored_strictly_as_bcrypt_hashes():
 # ==============================================================================
 def test_registration_success_forces_pending_front_desk():
     """Verify that public registration assigns role='front_desk' and status='pending'."""
-    with TestClient(app) as client:
+    with TestClient(test_app) as client:
         res = client.post("/auth/register", json={
             "name": "Alice Reception",
             "email": "alice_test@hotel.com",
@@ -103,7 +105,7 @@ def test_registration_success_forces_pending_front_desk():
 
 def test_role_injection_in_registration_is_prevented():
     """Verify that client cannot elevate role to 'manager' or force status='approved'."""
-    with TestClient(app) as client:
+    with TestClient(test_app) as client:
         # Client maliciously sends role='manager' and status='approved'
         res = client.post("/auth/register", json={
             "name": "Attacker Guy",
@@ -131,7 +133,7 @@ def test_role_injection_in_registration_is_prevented():
 
 def test_duplicate_email_rejected():
     """Verify that registering with an already existing email returns HTTP 400."""
-    with TestClient(app) as client:
+    with TestClient(test_app) as client:
         res = client.post("/auth/register", json={
             "name": "Duplicate Manager",
             "email": DEMO_MANAGER_EMAIL,
@@ -144,7 +146,7 @@ def test_duplicate_email_rejected():
 
 def test_weak_password_rejected():
     """Verify that password shorter than 8 characters returns HTTP 400."""
-    with TestClient(app) as client:
+    with TestClient(test_app) as client:
         res = client.post("/auth/register", json={
             "name": "Weak Pass User",
             "email": "weak@hotel.com",
@@ -156,7 +158,7 @@ def test_weak_password_rejected():
 
 def test_password_mismatch_rejected():
     """Verify that confirm_password mismatch returns HTTP 400."""
-    with TestClient(app) as client:
+    with TestClient(test_app) as client:
         res = client.post("/auth/register", json={
             "name": "Mismatch User",
             "email": "mismatch@hotel.com",
@@ -169,7 +171,7 @@ def test_password_mismatch_rejected():
 
 def test_invalid_email_format_rejected():
     """Verify that ill-formed email address returns HTTP 400."""
-    with TestClient(app) as client:
+    with TestClient(test_app) as client:
         res = client.post("/auth/register", json={
             "name": "Invalid Email User",
             "email": "not-a-valid-email-format",
@@ -185,7 +187,7 @@ def test_invalid_email_format_rejected():
 # ==============================================================================
 def test_wrong_password_rejected_with_401():
     """Verify that wrong passwords return HTTP 401 Unauthorized."""
-    with TestClient(app) as client:
+    with TestClient(test_app) as client:
         res = client.post("/auth/login", json={
             "email": DEMO_MANAGER_EMAIL,
             "password": "WrongPassword999",
@@ -196,7 +198,7 @@ def test_wrong_password_rejected_with_401():
 
 def test_pending_user_cannot_login():
     """Verify that pending users receive HTTP 403 Forbidden with clear message."""
-    with TestClient(app) as client:
+    with TestClient(test_app) as client:
         res = client.post("/auth/login", json={
             "email": DEMO_PENDING_EMAIL,
             "password": DEMO_PENDING_PASSWORD,
@@ -207,7 +209,7 @@ def test_pending_user_cannot_login():
 
 def test_approved_user_can_login():
     """Verify that approved users get HTTP 200 with JWT access token."""
-    with TestClient(app) as client:
+    with TestClient(test_app) as client:
         res = client.post("/auth/login", json={
             "email": DEMO_MANAGER_EMAIL,
             "password": DEMO_MANAGER_PASSWORD,
@@ -221,7 +223,7 @@ def test_approved_user_can_login():
 
 def test_rate_limiting_triggers_429():
     """Verify that 5 failed login attempts trigger HTTP 429 Too Many Requests."""
-    with TestClient(app) as client:
+    with TestClient(test_app) as client:
         target_email = "ratelimit_victim@hotel.com"
         # 5 failed attempts
         for _ in range(5):
@@ -245,7 +247,7 @@ def test_rate_limiting_triggers_429():
 # ==============================================================================
 def test_unauthenticated_requests_return_401():
     """Verify that requests without Bearer tokens return HTTP 401 Unauthorized."""
-    with TestClient(app) as client:
+    with TestClient(test_app) as client:
         payload = {"stay_date": "2025-11-15", "room_category": "Standard", "horizon": 7}
 
         # /predict without token
@@ -266,7 +268,7 @@ def test_front_desk_role_permissions():
     Verify RBAC boundary:
     front_desk CAN call /predict, but is FORBIDDEN (403) from calling /recommend and /admin/*.
     """
-    with TestClient(app) as client:
+    with TestClient(test_app) as client:
         # Login as front_desk
         login_res = client.post("/auth/login", json={
             "email": DEMO_FRONT_DESK_EMAIL,
@@ -299,7 +301,7 @@ def test_manager_role_permissions():
     Verify RBAC boundary:
     manager CAN call /predict, /recommend, and /admin/requests.
     """
-    with TestClient(app) as client:
+    with TestClient(test_app) as client:
         # Login as manager
         login_res = client.post("/auth/login", json={
             "email": DEMO_MANAGER_EMAIL,
@@ -335,7 +337,7 @@ def test_manager_approval_workflow():
     3. Manager approves user via POST /admin/requests/{id}/approve.
     4. User can now successfully log in and receive a JWT token!
     """
-    with TestClient(app) as client:
+    with TestClient(test_app) as client:
         # Step 1: Register new user
         reg_res = client.post("/auth/register", json={
             "name": "Bob Trainee",

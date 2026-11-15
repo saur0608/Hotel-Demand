@@ -42,15 +42,26 @@ _failed_login_attempts: Dict[str, List[float]] = {}
 # 1. DATABASE MANAGEMENT (SQLite: data/app.db)
 # ==============================================================================
 def get_db_connection() -> sqlite3.Connection:
-    """Connect to SQLite database."""
-    APP_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(APP_DB_PATH)
+    """Connect to SQLite database with serverless read-only filesystem fallback."""
+    global APP_DB_PATH
+    try:
+        APP_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(APP_DB_PATH)
+    except OSError:
+        # Fallback to writable /tmp on serverless read-only filesystems (e.g. Vercel, AWS Lambda)
+        from pathlib import Path
+        APP_DB_PATH = Path("/tmp/app.db")
+        try:
+            APP_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
+        conn = sqlite3.connect(APP_DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 
 def init_user_db() -> None:
-    """Initialize the users table schema if not already present."""
+    """Initialize the users table schema and auto-seed demo users if freshly created."""
     conn = get_db_connection()
     with conn:
         conn.execute("""
@@ -64,6 +75,33 @@ def init_user_db() -> None:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        # If DB was just initialized in a fresh container (/tmp), auto-populate demo users
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM users")
+        user_count = cursor.fetchone()[0]
+        if user_count == 0:
+            from src.config import (
+                DEMO_MANAGER_NAME,
+                DEMO_MANAGER_EMAIL,
+                DEMO_MANAGER_PASSWORD,
+                DEMO_FRONT_DESK_NAME,
+                DEMO_FRONT_DESK_EMAIL,
+                DEMO_FRONT_DESK_PASSWORD,
+                DEMO_PENDING_NAME,
+                DEMO_PENDING_EMAIL,
+                DEMO_PENDING_PASSWORD,
+            )
+            for d_name, d_email, d_pw, d_role, d_status in [
+                (DEMO_MANAGER_NAME, DEMO_MANAGER_EMAIL, DEMO_MANAGER_PASSWORD, "manager", "approved"),
+                (DEMO_FRONT_DESK_NAME, DEMO_FRONT_DESK_EMAIL, DEMO_FRONT_DESK_PASSWORD, "front_desk", "approved"),
+                (DEMO_PENDING_NAME, DEMO_PENDING_EMAIL, DEMO_PENDING_PASSWORD, "front_desk", "pending"),
+            ]:
+                salt = bcrypt.gensalt()
+                pw_hash = bcrypt.hashpw(d_pw.encode("utf-8"), salt).decode("utf-8")
+                conn.execute(
+                    "INSERT INTO users (name, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?)",
+                    (d_name, d_email.strip().lower(), pw_hash, d_role, d_status),
+                )
     conn.close()
 
 

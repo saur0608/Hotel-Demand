@@ -21,10 +21,12 @@ PROCESSED_DATA_DIR: Path = DATA_DIR / "processed"
 ARTIFACTS_DIR: Path = PROJECT_ROOT / "artifacts"
 NOTEBOOKS_DIR: Path = PROJECT_ROOT / "notebooks"
 
-# Ensure runtime directories exist
-RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
-PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
-ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+# Ensure runtime directories exist (safely ignored in read-only serverless filesystems like Vercel / Lambda)
+for _dir in (RAW_DATA_DIR, PROCESSED_DATA_DIR, ARTIFACTS_DIR):
+    try:
+        _dir.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
 
 # Data file locations
 RAW_BOOKINGS_CSV: Path = RAW_DATA_DIR / "hotel_bookings_synthetic.csv"
@@ -97,7 +99,16 @@ JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
 # SQLite Application Database (users, auth status, audit)
-APP_DB_PATH: Path = DATA_DIR / "app.db"
+def _get_app_db_path() -> Path:
+    env_db = os.getenv("APP_DB_PATH")
+    if env_db:
+        return Path(env_db)
+    # Detect serverless read-only environments (Vercel, AWS Lambda) and use /tmp
+    if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME") or os.getenv("LAMBDA_TASK_ROOT"):
+        return Path("/tmp/app.db")
+    return DATA_DIR / "app.db"
+
+APP_DB_PATH: Path = _get_app_db_path()
 
 # Demo user credentials for scripts/seed_users.py
 DEMO_MANAGER_NAME: str = os.getenv("DEMO_MANAGER_NAME", "Hotel General Manager")
